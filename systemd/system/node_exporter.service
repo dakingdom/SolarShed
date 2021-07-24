@@ -1,0 +1,12 @@
+[Unit]
+Description=Node Exporter
+After=network.target
+
+[Service]
+User=node_exporter
+Group=node_exporter
+Type=simple
+ExecStart=/home/node_exporter/node_exporter-1.0.1.linux-armv7/node_exporter --no-collector.mdadm --collector.textfile.directory=/ramdisk
+
+[Install]
+WantedBy=multi-user.target

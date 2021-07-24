@@ -1,0 +1,294 @@
+# Install Raspian light and SolarMon tools(no GUI)
+# v0.4k - 3/1/2021
+# Allow at least 30 mins to do full install
+# You must be connected to the Internet for updates and downloads
+
+# - Download Noobs Lite, unzip the file into a new folder Called Pi
+#     https://downloads.raspberrypi.org/NOOBS_lite_latest
+# - Format your microSD card as a standard single fat32 partition 
+# - Copy all the Pi directory contents onto the new disk
+# - Remove the MicroSD card and insert it into the Pi. 
+# - Attach akeyboard/mouse/monitor and boot the Pi.
+# 
+# Notes:
+# - Add WiFi networking to your home network at Noobs install so you can download updates and easily login at boot after SSH enable
+# - Select Raspian minmal install only - this is key on the Pi Zero to save precious resources.
+
+###########################################################
+### After install and reboot login at the console as pi:raspian  ....
+
+sudo -s
+
+###########################################################
+### Raspberry Config
+
+raspi-config
+
+# - Change pi passwd
+# - Set hostname under 'network'
+# - Set locale en_US.UTF-8 - remove all other locales # needed???, I did not do
+# - Set US 101 key PC keyboard with default settings # needed???, I did not do
+# - Set timezone 
+# - Enable SSH interface under 'Interfacing Options'
+# - Enable serial console
+
+# Exit from raspi-config
+
+###########################################################
+### Edit /boot/config.txt (at end of file) to ensure serial console is enabled
+
+enable_uart=1
+earlycon=
+
+###########################################################
+### Update Software
+
+apt update
+apt upgrade
+
+###########################################################
+### Run main Solar data collector from a solar user account
+
+apt install adduser
+
+# Add user solar 
+#   - passwd 'solar' use defaults 
+#   - copy your bash env to /home/solar and root home dirs
+adduser solar
+
+# enable sudo with no password by copying the pi user line and changing pi to solar:
+vi /etc/sudoers.d/010_pi-nopasswd
+
+cd ~solar
+###########################################################
+
+###########################################################
+###
+### Lets get everything downloaded.
+### Incase you need to work offline!
+###
+###########################################################
+
+
+###########################################################
+###    Git Clone SolarShed project 
+###    The Project is used for config files and 
+###    (offline) reference
+###########################################################
+
+
+###########################################################
+### Download and install Prometheus and node_exporter
+
+mkdir downloads
+cd downloads
+
+# Pi Zero hardware
+wget https://github.com/prometheus/prometheus/releases/download/v2.19.0/prometheus-2.19.0.linux-armv6.tar.gz
+wget https://github.com/prometheus/node_exporter/releases/download/v1.0.0/node_exporter-1.0.0.linux-armv6.tar.gz
+
+# Pi 4 hardware
+wget https://github.com/prometheus/prometheus/releases/download/v2.24.0-rc.0/prometheus-2.24.0-rc.0.linux-armv7.tar.gz
+wget https://github.com/prometheus/node_exporter/releases/download/v1.0.1/node_exporter-1.0.1.linux-armv7.tar.gz
+
+###########################################################
+### Grafana 
+
+apt install libfontconfig1
+
+# Pi 4 hardware ARM 7
+wget https://dl.grafana.com/oss/release/grafana_7.3.6_armhf.deb
+dpkg -i grafana_7.3.6_armhf.deb
+
+# Pi Zero hardware ARM 6
+wget https://dl.grafana.com/oss/release/grafana-rpi_7.3.6_armhf.deb
+dpkg -i grafana-rpi_7.3.6_armhf.deb
+
+grafana-cli plugins install grafana-clock-panel
+grafana-cli plugins install briangann-gauge-panel
+grafana-cli plugins install dalvany-image-panel
+grafana-cli plugins install innius-video-panel
+
+apt-get --fix-broken install
+
+###########################################################
+### Tracer code has not been ported to Python3 yet:
+
+apt install python-pip
+pip install pymodbus pyserial
+
+###########################################################
+### Get Epsolar-tracer project
+
+git clone https://github.com/kasbert/epsolar-tracer.git
+
+# Kernel Headers for Epever Tracers to compile kernel modules...
+apt install gcc raspberrypi-kernel-headers ## for Tracer
+
+cd epsolar-tracer/xr_usb_serial_common-1a/
+make
+#??? cp xr_usb_serial_common.ko  /lib/modules/4.19.97+/kernel/drivers/tty/serial/
+
+###########################################################
+### Reboot with the new settings
+
+reboot
+
+
+###########################################################
+# Create the Ramdisk for ephemeral files 
+#   (faster and less wear to memory card)
+
+cat >> /etc/fstab
+tmpfs /ramdisk tmpfs nodev,nosuid,size=1M 0 0
+
+# check ramdisk is mounted correctly
+mkdir /ramdisk
+mount -a
+df -h
+
+# Now reboot and login remotely with SSH as user solar, check all is working ok
+
+###########################################
+### Useful commands to know while setting up services
+
+sudo -s
+# or sudo command
+#   ie: sudo systemctl daemon-reload
+
+systemctl daemon-reload
+
+systemctl enable <service>
+systemctl start <service>
+systemctl status <service>
+systemctl edit --full <service>
+systemctl show <service>
+systemctl cat <service>
+systemctl disable <service>
+systemctl restart <service>
+
+systemctl list-unit-files
+
+###########################################
+### Setup Prometheus
+
+useradd -m -s /bin/bash prometheus
+mkdir -p ~/prometheus/data
+
+# Untar prometheus in its home dir
+tar xvzf prometheus-*.gz
+cd prometheus*[6,7]
+mv prometheus.yml prometheus.yml.backup
+cp ~solar/SolarShed/etc/prometheus.yml .
+chown -R prometheus:prometheus ~prometheus 
+
+# Prometheus config file can be tested with
+./promtool check config prometheus.yml
+# and if failure not show in promtool out, then check logs
+tail /var/log/messages
+
+# Add prometheus to systemctl so they start automatically at boottime
+cp ~solar/SolarShed/systemd/system/prometheus.service /etc/systemd/system
+
+# Setup service and ensure its working as expected...
+
+/bin/systemctl daemon-reload
+/bin/systemctl enable prometheus
+/bin/systemctl start prometheus
+/bin/systemctl status prometheus
+
+# Should be no errors and should end with:
+#   msg="Server is ready to receive web requests."
+
+# Check web interface at http://localhost:9090
+#   enter 'node_load1' and press execute to see value and graph collected locally
+
+###########################################
+### Setup Node Exporter
+
+# Add Node Exprter users
+useradd -m -s /bin/bash node_exporter
+
+# Untar node_exporter in its home dir
+cp ~pi/downloads/node_exporter-*.gz ~node_exporter
+cd ~node_exporter
+tar xvzf node_exporter-*.gz
+chown -R node_exporter:node_exporter ~node_exporter
+# cd ../node_exporter*[6,7]
+#./node_exporter --no-collector.mdadm --collector.textfile.directory=/ramdisk
+# Should end with - msg="Listening on" address=:9100
+
+# Add node_exporter to systemctl so they start automatically at boottime
+cp ~solar/SolarShed/systemd/system/node_exporter.service /etc/systemd/system
+
+systemctl daemon-reload
+systemctl enable node_exporter
+systemctl start node_exporter
+systemctl status node_exporter
+
+# Should not have errors and end with - msg="Listening on" address=:9100
+# Check for data at 
+#   http://localhost:9100/metrics
+
+###########################################
+### Configuring Grafana Server
+#  (Already installed and using verion 7.3)
+#
+# Now test Grafana interface
+#
+# Goto 
+#    http://<ipaddr>:3000/login 
+#
+#    (admin:admin skip updating passwd for now)
+#
+# In Configuration Menu (Gear in sidebar):
+#   - Select "Datasource" menu item
+#   - Add datasource as Prometheus (search for Prometheus in filter)
+#   - In Prometheus configuration set URL to http://localhost:9090 
+#   - Then Save&Test (will fail if no contact with Prometheus)
+# In Create Menu (+ in sidebar)
+#   - Select "Import" menu item
+#   - Upload JSON file from GrafanaJsonTemplates folder in the SolarShed repo
+#     or 
+#   - Cut n paste JSON from a working panel (warning JSON file is a big copy and paste)
+#
+#      ???(- look for 'share->export' on top right)????
+
+######################### End ######################
+
+######################### Additional notes - for debug only #########################
+# References
+
+# - https://medium.com/@benmorel/creating-a-linux-service-with-systemd-611b5c8b91d6
+# - https://www.digitalocean.com/community/tutorials/how-to-use-systemctl-to-manage-systemd-services-and-units
+
+#############################################
+# add your local scripts here, use /dev/usb* interfaces  - IMPORTANT!
+
+# crontab -e
+@reboot /home/joe/restartSys.sh
+
+# For lsnet alias
+apt-get install arp-scan
+apt-get install lighttpd - for xtra reports only in /var/www/html/index.html
+
+# Remove competing cdc module
+cat >> /etc/modprobe.d/blacklist-cdc_acm.conf
+blacklist cdc_acm
+
+####### Fix USB serial interfaces - must be rerun at each boot
+# Makes USB serial ports assignment consistent and not randomly assigned. Absolute, not relative.
+# Pi4 arch with built in 4 port USB hub
+ln -sf /dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.0:1.0-port0 /dev/usb0
+ln -sf /dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.1:1.0-port0 /dev/usb1
+ln -sf /dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.2:1.0-port0 /dev/usb2
+ln -sf /dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.3:1.0-port0 /dev/usb3
+ln -sf /dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.0-port0 /dev/usb4
+
+# Pi Zero arch with external 4 port USB hub
+#ln -s /dev/serial/by-path/platform-20980000.usb-usb-0:1.1:1.0-port0 /dev/usb1
+#ln -s /dev/serial/by-path/platform-20980000.usb-usb-0:1.2:1.0-port0 /dev/usb2
+#ln -s /dev/serial/by-path/platform-20980000.usb-usb-0:1.3:1.0-port0 /dev/usb3
+#ln -s /dev/serial/by-path/platform-20980000.usb-usb-0:1.4:1.0-port0 /dev/usb4
+#ln -s /dev/serial/by-path/platform-20980000.usb-usb-0:1.0:1.0-port0 /dev/usb0
+########
