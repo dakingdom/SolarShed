@@ -158,16 +158,18 @@ sudo -s
 
 systemctl daemon-reload
 
-systemctl enable <service>
-systemctl start <service>
-systemctl status <service>
-systemctl edit --full <service>
-systemctl show <service>
-systemctl cat <service>
-systemctl disable <service>
-systemctl restart <service>
+systemctl enable <service_name>
+systemctl start <service_name>
+systemctl status <service_name>
+systemctl edit --full <service_name>
+systemctl show <service_name>
+systemctl cat <service_name>
+systemctl disable <service_name>
+systemctl restart <service_name>
 
 systemctl list-unit-files
+
+journalctl -b -u <service_name>
 
 ###########################################
 ### Setup Prometheus
@@ -192,13 +194,16 @@ cp ~solar/SolarShed/systemd/system/prometheus.service /etc/systemd/system
 
 # Setup service and ensure its working as expected...
 
-/bin/systemctl daemon-reload
-/bin/systemctl enable prometheus
-/bin/systemctl start prometheus
-/bin/systemctl status prometheus
+systemctl daemon-reload
+systemctl enable prometheus
+systemctl start prometheus
+# Should be no errors with status:
+systemctl status prometheus
 
-# Should be no errors and should end with:
-#   msg="Server is ready to receive web requests."
+# Should see msg="Server is ready to receive web requests." with:
+journalctl -b -u prometheus
+# or 
+journalctl -b -u prometheus |grep -i ready
 
 # Check web interface at http://localhost:9090
 #   enter 'node_load1' and press execute to see value and graph collected locally
@@ -224,9 +229,15 @@ cp ~solar/SolarShed/systemd/system/node_exporter.service /etc/systemd/system
 systemctl daemon-reload
 systemctl enable node_exporter
 systemctl start node_exporter
+
+# Should not have errors with:
 systemctl status node_exporter
 
-# Should not have errors and end with - msg="Listening on" address=:9100
+# Should see - msg="Listening on" address=:9100 with:
+journalctl -b -u node_exporter
+# or 
+journalctl -b -u node_exporter |grep -i listening
+
 # Check for data at 
 #   http://localhost:9100/metrics
 
