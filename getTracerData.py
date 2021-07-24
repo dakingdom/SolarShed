@@ -197,14 +197,12 @@ if (result.registers):
 
 # Battery status bit pattern 0x3200
 # D3-D0: 01H Overvolt , 00H Normal , 02H Under Volt, 03H Low Volt Disconnect, 04H Fault
-# D7-D4: 00H Normal, 01H Over Temp.(Higher than the warning settings), 02H Low Temp.( Lower than the
- warning settings),
+# D7-D4: 00H Normal, 01H Over Temp.(Higher than the warning settings), 02H Low Temp.( Lower than the warning settings),
 # D8: Battery inerternal resistance abnormal 1, normal 0
 # D15: 1-Wrong identification for rated voltage
 #
 # Inverter status bit pattern 0x3201
-# D15-D14: Input volt status. 00 normal, 01 no power connected, 02H Higher volt input, 03H Input vol
-t error.
+# D15-D14: Input volt status. 00 normal, 01 no power connected, 02H Higher volt input, 03H Input vol t error.
 # D13: Charging MOSFET is short.
 # D12: Charging or Anti-reverse MOSFET is short.
 # D11: Anti-reverse MOSFET is short.
