@@ -59,6 +59,9 @@ adduser solar
 # enable sudo with no password by copying the pi user line and changing pi to solar:
 vi /etc/sudoers.d/010_pi-nopasswd
 
+#For pi zero:
+echo "vm.swappiness=10" >> /etc/sysctl.conf
+
 cd ~solar
 ###########################################################
 
@@ -175,11 +178,14 @@ journalctl -b -u <service_name>
 ### Setup Prometheus
 
 useradd -m -s /bin/bash prometheus
-mkdir -p ~/prometheus/data
+mkdir ~prometheus/data
+mv ~solar/downloads/prometheus* ~prometheus
+cd ~prometheus
 
 # Untar prometheus in its home dir
 tar xvzf prometheus-*.gz
-cd prometheus*[6,7]
+ln -s prometheus-<version>.linux-arm<arm_version> prometheus
+cd prometheus
 mv prometheus.yml prometheus.yml.backup
 cp ~solar/SolarShed/etc/prometheus.yml .
 chown -R prometheus:prometheus ~prometheus 
@@ -215,9 +221,10 @@ journalctl -b -u prometheus |grep -i ready
 useradd -m -s /bin/bash node_exporter
 
 # Untar node_exporter in its home dir
-cp ~pi/downloads/node_exporter-*.gz ~node_exporter
+mv ~solar/downloads/node_exporter-*.gz ~node_exporter
 cd ~node_exporter
 tar xvzf node_exporter-*.gz
+ln -s node_exporter-<version>.linux-armv<arm_version>
 chown -R node_exporter:node_exporter ~node_exporter
 # cd ../node_exporter*[6,7]
 #./node_exporter --no-collector.mdadm --collector.textfile.directory=/ramdisk
@@ -264,6 +271,12 @@ journalctl -b -u node_exporter |grep -i listening
 #   - Cut n paste JSON from a working panel (warning JSON file is a big copy and paste)
 #
 #      ???(- look for 'share->export' on top right)????
+
+###########################################
+### Running Data Collection programs
+#
+cd ~solar/SolarShed/
+runGetSolarData.sh
 
 ######################### End ######################
 

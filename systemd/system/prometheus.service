@@ -6,8 +6,8 @@ After=network.target
 User=prometheus
 Group=prometheus
 Type=simple
-ExecStart=/home/prometheus/prometheus-2.24.0-rc.0.linux-armv7/prometheus\
-  --config.file="/home/prometheus/prometheus-2.24.0-rc.0.linux-armv7/prometheus.yml"\
+ExecStart=/home/prometheus/prometheus/prometheus\
+  --config.file="/home/prometheus/prometheus/prometheus.yml"\
   --storage.tsdb.path="/home/prometheus/data"
 
 [Install]
