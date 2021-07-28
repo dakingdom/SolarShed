@@ -51,6 +51,13 @@ apt upgrade
 
 apt install adduser
 
+# vi maybe installed by if you like vim which comes with vimdiff
+
+apt install vim
+
+#If you used vim or vi, then add to .bashrc to make sure vim or vi gets loaded as editor:
+echo "export EDITOR=vi" >> ~/.bashrc
+
 # Add user solar 
 #   - passwd 'solar' use defaults 
 #   - copy your bash env to /home/solar and root home dirs
@@ -59,10 +66,11 @@ adduser solar
 # enable sudo with no password by copying the pi user line and changing pi to solar:
 vi /etc/sudoers.d/010_pi-nopasswd
 
-#For pi zero:
-echo "vm.swappiness=10" >> /etc/sysctl.conf
+#If you used vim or vi, then add to .bashrc to make sure vim or vi gets loaded as editor:
+echo "export EDITOR=vi" >> ~solar/.bashrc
 
 cd ~solar
+
 ###########################################################
 
 ###########################################################
@@ -90,7 +98,7 @@ cd downloads
 wget https://github.com/prometheus/prometheus/releases/download/v2.19.0/prometheus-2.19.0.linux-armv6.tar.gz
 wget https://github.com/prometheus/node_exporter/releases/download/v1.0.0/node_exporter-1.0.0.linux-armv6.tar.gz
 
-# Pi 4 hardware
+# Pi 3b or 4 hardware
 wget https://github.com/prometheus/prometheus/releases/download/v2.24.0-rc.0/prometheus-2.24.0-rc.0.linux-armv7.tar.gz
 wget https://github.com/prometheus/node_exporter/releases/download/v1.0.1/node_exporter-1.0.1.linux-armv7.tar.gz
 
@@ -99,13 +107,13 @@ wget https://github.com/prometheus/node_exporter/releases/download/v1.0.1/node_e
 
 apt install libfontconfig1
 
-# Pi 4 hardware ARM 7
-wget https://dl.grafana.com/oss/release/grafana_7.3.6_armhf.deb
-dpkg -i grafana_7.3.6_armhf.deb
-
 # Pi Zero hardware ARM 6
 wget https://dl.grafana.com/oss/release/grafana-rpi_7.3.6_armhf.deb
 dpkg -i grafana-rpi_7.3.6_armhf.deb
+
+# Pi 3b or 4 hardware ARM 7
+wget https://dl.grafana.com/oss/release/grafana_7.3.6_armhf.deb
+dpkg -i grafana_7.3.6_armhf.deb
 
 grafana-cli plugins install grafana-clock-panel
 grafana-cli plugins install briangann-gauge-panel
@@ -123,6 +131,7 @@ pip install pymodbus pyserial
 ###########################################################
 ### Get Epsolar-tracer project
 
+cd ..
 git clone https://github.com/kasbert/epsolar-tracer.git
 
 # Kernel Headers for Epever Tracers to compile kernel modules...
@@ -130,27 +139,37 @@ apt install gcc raspberrypi-kernel-headers ## for Tracer
 
 cd epsolar-tracer/xr_usb_serial_common-1a/
 make
-#??? cp xr_usb_serial_common.ko  /lib/modules/4.19.97+/kernel/drivers/tty/serial/
+
+cp epsolar-tracer//xr_usb_serial_common-1a/xr_usb_serial_common.ko /lib/modules/`uname -r`/kernel/drivers/tty/serial
+
+# Remove competing cdc module
+echo "blacklist cdc_acm" >> /etc/modprobe.d/blacklist-cdc_acm.conf
 
 ###########################################################
-### Reboot with the new settings
-
-reboot
-
-
-###########################################################
-# Create the Ramdisk for ephemeral files 
+### Create the Ramdisk for ephemeral files 
 #   (faster and less wear to memory card)
 
-cat >> /etc/fstab
-tmpfs /ramdisk tmpfs nodev,nosuid,size=1M 0 0
+echo "tmpfs /ramdisk tmpfs nodev,nosuid,size=1M 0 0" >> /etc/fstab
 
 # check ramdisk is mounted correctly
 mkdir /ramdisk
 mount -a
 df -h
 
-# Now reboot and login remotely with SSH as user solar, check all is working ok
+###########################################
+### Since we are running off an MicroSDHC lets reduce swappiness
+
+echo "vm.swappiness=10" >> /etc/sysctl.conf
+
+###########################################
+### Make sure everything is the solar account is owned by solar
+
+chown -R solar:solar ~solar
+
+###########################################
+### Now reboot and login remotely with SSH as user solar, check all is working ok
+
+reboot
 
 ###########################################
 ### Useful commands to know while setting up services
@@ -226,9 +245,6 @@ cd ~node_exporter
 tar xvzf node_exporter-*.gz
 ln -s node_exporter-<version>.linux-armv<arm_version>
 chown -R node_exporter:node_exporter ~node_exporter
-# cd ../node_exporter*[6,7]
-#./node_exporter --no-collector.mdadm --collector.textfile.directory=/ramdisk
-# Should end with - msg="Listening on" address=:9100
 
 # Add node_exporter to systemctl so they start automatically at boottime
 cp ~solar/SolarShed/systemd/system/node_exporter.service /etc/systemd/system
@@ -251,6 +267,14 @@ journalctl -b -u node_exporter |grep -i listening
 ###########################################
 ### Configuring Grafana Server
 #  (Already installed and using verion 7.3)
+
+# Start server
+systemctl enable grafana-server
+systemctl start grafana-server
+systemctl status grafana-server
+
+journalctl -b -u grafana-server |grep "Server Listen"
+
 #
 # Now test Grafana interface
 #
@@ -295,10 +319,6 @@ runGetSolarData.sh
 # For lsnet alias
 apt-get install arp-scan
 apt-get install lighttpd - for xtra reports only in /var/www/html/index.html
-
-# Remove competing cdc module
-cat >> /etc/modprobe.d/blacklist-cdc_acm.conf
-blacklist cdc_acm
 
 ####### Fix USB serial interfaces - must be rerun at each boot
 # Makes USB serial ports assignment consistent and not randomly assigned. Absolute, not relative.
