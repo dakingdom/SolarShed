@@ -8,13 +8,18 @@
 
 #!/bin/bash
 #
-echo starting Epever LifePO4 serial data collection
+echo Starting Epever serial data collection...
 while : ; do
+    echo "Gathering Solar Data from getTracerData.py..."
     /home/solar/getTracerData.py > /ramdisk/solarData.txt.$$
+    echo "...Now sleeping for 1 second."
     sleep 1
+    echo "Adding date..."
     date >> /ramdisk/solarData.txt.$$
     mv /ramdisk/solarData.txt.$$ /ramdisk/solarData.txt
+    echo "...Exporting data for Node Exporter..."
     /home/solar/exportData.sh
+    echo "...Now sleeping for 4 seconds."
     sleep 4
 done
 
