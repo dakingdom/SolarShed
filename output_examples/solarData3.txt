@@ -1,0 +1,43 @@
+{0: 'EPsolar Tech co., Ltd', 1: 'TriRon4210', 2: 'V01.55+V01.22'} 
+
+0x3100: pvVoltage: 10.92 v
+0x3101: pvCurrent: 0.0 a
+0x3102: pvPowerL: 0.0 w
+0x3104: batteryChargeV: 12.72 v
+0x3105: batteryChargeC: 0.0 a
+0x3106: batteryChargePowerL: 0.0 w
+0x310C: loadVoltage: 12.72 v
+0x310D: loadCurrent: 5.66 a
+0x310E: loadPowerL: 71.99 w
+0x3110: batteryTemp: 22.72 c 72.896 f
+0x3111: deviceTemp: 27.53 c 81.554 f
+0x311A: Battery S.O.C: 59.0 %
+0x3300: pvMaxInVolts: 38.51 v
+0x3301: pvMinInVolts: 0.0 v
+0x3302: batMaxVolts: 14.94 v
+0x3303: batMinVolts: 12.41 v
+0x3304: consumedEnergyTodayL: 870 w/h
+0x330C: genEnergyTodayL: 1150 w/h
+0x3200: batteryStatus: 0000000000000000 bits
+0x3201: equipStatus: 0000000000000001 bits
+runningOk: 1
+fault: 0
+chargeStatus: 0 Standby
+pvError: 0
+0x9000: batType: 3
+0x9001: batCap: 250 ah
+0x9002: batComp: 300
+0x9003: hiVDiscon: 16.0 v
+0x9004: chargeLimitV: 15.0 v
+0x9005: overVRecon: 15.0 v
+0x9006: eqVolts: 14.8 v
+0x9007: boostV: 14.6 v
+0x9008: floatV: 13.8 v
+0x9009: boostReconV: 13.2 v
+0x900A: loVRecon: 12.6 v
+0x900B: underVRecover: 12.2 v
+0x900C: underVWarn: 12.0 v
+0x90OD: loVDiscon: 11.1 v
+0x900E: dischargeLimitV: 10.6 v
+
+Battery is Discharging at 71.99 Watts

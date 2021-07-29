@@ -1,0 +1,8 @@
+total 24
+drwxr-xr-x 9 solar solar  4096 Jul 22 21:17 epsolar-tracer
+lrwxrwxrwx 1 solar solar    30 Jul 22 21:18 pyepsolartracer -> epsolar-tracer/pyepsolartracer
+drwxr-xr-x 4 solar solar  4096 Jul 26 16:53 downloads
+lrwxrwxrwx 1 solar solar    23 Jul 29 12:40 exportData.sh -> SolarShed/exportData.sh
+-rwxr-xr-x 1 solar solar 12241 Jul 29 12:48 getTracerData.py
+lrwxrwxrwx 1 solar solar    28 Jul 29 13:06 runGetSolarData.sh -> SolarShed/runGetSolarData.sh
+drwxr-xr-x 7 solar solar  4096 Jul 29 13:06 SolarShed
