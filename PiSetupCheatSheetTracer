@@ -145,6 +145,10 @@ make
 
 cp epsolar-tracer//xr_usb_serial_common-1a/xr_usb_serial_common.ko /lib/modules/`uname -r`/kernel/drivers/tty/serial
 
+echo /lib/modules/`uname -r`/kernel/drivers/tty/serial/xr_usb_serial_common >> /etc/modules-load.d/modules.conf
+
+sudo depmod -a 
+
 # Remove competing cdc module
 echo "blacklist cdc_acm" >> /etc/modprobe.d/blacklist-cdc_acm.conf
 
@@ -301,9 +305,37 @@ journalctl -b -u grafana-server |grep "Server Listen"
 
 ###########################################
 ### Running Data Collection programs
-#
-cd ~solar/SolarShed/
-runGetSolarData.sh
+#  The runGetSolarData.sh needs to run as root
+
+cd ~solar
+ln -s epsolar-tracer/pyepsolartracer pyepsolartracer
+cp SolarShed/getTracerData.py .
+ln -s SolarShed/exportData.sh exportData.sh
+ln -s SolarShed/runGetSolarData.sh runGetSolarData.sh
+
+#run the main loop, it must run as root:
+
+./runGetSolarData.sh
+
+# To check to see if the runGetSolarData.sh is working you 
+# should see solarData.txt with a recent timestamp:
+
+date
+ls -ltr /ramdisk
+
+# Check the solarData.txt you should see solar key values:
+cat /ramdisk/solarData.txt
+
+# Check the solarData.txt.prom you should see solar key values:
+
+cat /ramdisk/solarData.txt.prom
+
+# In Node Exporter metrics web page you should see solar data.
+
+# In Prometheus web page you should see data and graphs under "AB_SolarStats" search.
+
+# If you see data in Prometheus then you should be able to see solar info in 
+# the Grafana dashboard.
 
 ######################### End ######################
 

@@ -6,8 +6,13 @@
 # 
 # Here is an example wrapper script that brings it altogether, loading data into grafana indefinitely.
 
-#!/bin/bash
-#
+# Run this program as root
+# look for the new file being created /ramdisk/solarData.txt.prom and updated every 4 seconds
+# node_exporter will automatically load this data into Prometheus for you.
+
+# In Grafana, the Prometheus data can be seen under the label 'AB_SolarStats'
+# Ensure Prometheus and node_exporter are working correctly.
+
 echo Starting Epever serial data collection...
 while : ; do
     echo "Gathering Solar Data from getTracerData.py..."
@@ -22,16 +27,3 @@ while : ; do
     echo "...Now sleeping for 4 seconds."
     sleep 4
 done
-
-# Create the above script called runGetSolarData.sh, make it executable with '# chmod +x runGetSolarData.sh'
-# Then run it as root ./runGetSolarData.sh 
-# look for the new file being created /ramdisk/solarData.txt.prom and updated every 4 seconds
-# node_exporter will automatically load this data into Prometheus for you.
-
-# In Grafana, the Prometheus data can be seen under the label 'AB_SolarStats'
-# Ensure Prometheus and node_exporter are working correctly.
-
-# example test commands to create load on your Pi server for testing with node_exporter
-# create CPU & LoadAvg activity with # while :; do :; done
-# create DISK load with # find /usr -exec grep XXX {} \;
-# create Network load with # ping -f 8.8.8.8
